@@ -1,0 +1,143 @@
+/*
+ * (C) Copyright 2018 Rockchip Electronics Co., Ltd
+ *
+ * SPDX-License-Identifier:     GPL-2.0+
+ */
+
+/ {
+	aliases {
+		mmc0 = &sdmmc;
+		mmc1 = &sdhci;
+	};
+
+	chosen {
+		stdout-path = &uart2;
+		u-boot,spl-boot-order = &sdmmc, &sdhci;
+		duragon,i2c = &i2c3;
+	};
+
+	psci {
+		status = "okay";
+		u-boot,dm-pre-reloc;
+		u-boot,dm-spl;
+		u-boot,dm-tpl;
+	};
+
+	pmusgrf: syscon@ff330000 {
+		compatible = "rockchip,rk3399-pmusgrf", "syscon";
+		reg = <0x0 0xff330000 0x0 0xe3d4>;
+	};
+
+	crypto: crypto@ff8b0000 {
+		compatible = "rockchip,rk3399-crypto";
+		reg = <0x0 0xff8b0000 0x0 0x10000>;
+		clock-names = "sclk_crypto0", "sclk_crypto1";
+		clocks = <&cru SCLK_CRYPTO0>, <&cru SCLK_CRYPTO1>;
+		status = "disabled";
+	};
+
+	cic: syscon@ff620000 {
+		compatible = "rockchip,rk3399-cic", "syscon";
+		reg = <0x0 0xff620000 0x0 0x100>;
+	};
+};
+
+&uart2 {
+	clock-frequency = <24000000>;
+	u-boot,dm-pre-reloc;
+	u-boot,dm-spl;
+	u-boot,dm-tpl;
+};
+
+&saradc {
+	u-boot,dm-pre-reloc;
+	u-boot,dm-spl;
+	u-boot,dm-tpl;
+};
+
+&sdmmc {
+	u-boot,dm-pre-reloc;
+	u-boot,dm-spl;
+	u-boot,dm-tpl;
+};
+
+&sdhci {
+	u-boot,dm-pre-reloc;
+	u-boot,dm-spl;
+	u-boot,dm-tpl;
+};
+
+&pmu {
+	u-boot,dm-pre-reloc;
+	u-boot,dm-spl;
+	u-boot,dm-tpl;
+};
+
+&pmugrf {
+	status = "okay";
+	u-boot,dm-pre-reloc;
+	u-boot,dm-spl;
+	u-boot,dm-tpl;
+};
+
+&pmucru {
+	u-boot,dm-pre-reloc;
+	u-boot,dm-spl;
+	u-boot,dm-tpl;
+};
+
+&pmusgrf {
+	u-boot,dm-pre-reloc;
+	u-boot,dm-spl;
+	u-boot,dm-tpl;
+};
+
+&cru {
+	u-boot,dm-pre-reloc;
+	u-boot,dm-spl;
+	u-boot,dm-tpl;
+};
+
+&crypto {
+	u-boot,dm-pre-reloc;
+	u-boot,dm-spl;
+	u-boot,dm-tpl;
+};
+
+&grf {
+	u-boot,dm-pre-reloc;
+	u-boot,dm-spl;
+	u-boot,dm-tpl;
+};
+
+&cic {
+	u-boot,dm-pre-reloc;
+	u-boot,dm-spl;
+	u-boot,dm-tpl;
+};
+
+&dmc {
+	u-boot,dm-pre-reloc;
+	u-boot,dm-spl;
+	u-boot,dm-tpl;
+};
+
+&emmc_phy {
+	u-boot,dm-pre-reloc;
+	u-boot,dm-spl;
+	u-boot,dm-tpl;
+};
+
+&u2phy0 {
+	status = "okay";
+	u-boot,dm-pre-reloc;
+	u-boot,dm-spl;
+	u-boot,dm-tpl;
+};
+
+&u2phy0_otg {
+	status = "okay";
+	u-boot,dm-pre-reloc;
+	u-boot,dm-spl;
+	u-boot,dm-tpl;
+};

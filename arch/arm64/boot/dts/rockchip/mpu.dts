@@ -1,0 +1,384 @@
+/dts-v1/;
+
+#include "friendlyelec-som-rk3399.dtsi"
+
+/ {
+	model = "MPU v2.0";
+	compatible = "friendlyelec,rk3399-som", "rockchip,rk3399";
+
+	ext_leds: ext-leds {
+		compatible = "gpio-leds";
+		pinctrl-names = "default";
+		pinctrl-0 =<&ext_leds_gpios>;
+		led4 {
+			label = "ext_led1";
+			gpios = <&gpio2 3 GPIO_ACTIVE_HIGH>;
+			linux,default-trigger = "heartbeat";
+			linux,default-trigger-delay-ms = <0>;
+		};
+		led5 {
+			label = "ext_led2";
+			gpios = <&gpio2 4 GPIO_ACTIVE_HIGH>;
+			linux,default-trigger = "heartbeat";
+			linux,default-trigger-delay-ms = <0>;
+		};
+		led6 {
+			label = "ext_led3";
+			gpios = <&gpio2 5 GPIO_ACTIVE_HIGH>;
+			linux,default-trigger = "heartbeat";
+			linux,default-trigger-delay-ms = <0>;
+		};
+		led7 {
+			label = "ext_led4";
+			gpios = <&gpio2 6 GPIO_ACTIVE_HIGH>;
+			linux,default-trigger = "heartbeat";
+			linux,default-trigger-delay-ms = <0>;
+		};
+	};
+
+	// bdc_leds: bdc-leds {
+		// led8 {
+		// 	label = "bdc_logo";
+		// 	gpios = <&gpio_expander 3 GPIO_ACTIVE_HIGH>;
+		// 	linux,default-trigger = "default-on";
+		// };
+		// led9 {
+		// 	label = "bdc_menu";
+		// 	gpios = <&gpio_expander 7 GPIO_ACTIVE_HIGH>;
+		// 	linux,default-trigger = "default-on";
+		// };
+		// led10 {
+		// 	label = "bdc_down";
+		// 	gpios = <&gpio_expander 5 GPIO_ACTIVE_HIGH>;
+		// 	linux,default-trigger = "default-on";
+		// };
+		// led11 {
+		// 	label = "bdc_up";
+		// 	gpios = <&gpio_expander 4 GPIO_ACTIVE_HIGH>;
+		// 	linux,default-trigger = "default-on";
+		// };
+		// led12 {
+		// 	label = "bdc_enter";
+		// 	gpios = <&gpio_expander 6 GPIO_ACTIVE_HIGH>;
+		// 	linux,default-trigger = "default-on";
+		// };
+	// };
+	
+
+	vdda_codec: vdda-codec {
+		compatible = "regulator-fixed";
+		regulator-name = "vdda_codec";
+		regulator-always-on;
+		regulator-boot-on;
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+	};
+
+	vddd_codec: vddd-codec {
+		compatible = "regulator-fixed";
+		regulator-name = "vddd_codec";
+		regulator-always-on;
+		regulator-boot-on;
+		regulator-min-microvolt = <1600000>;
+		regulator-max-microvolt = <1600000>;
+	};
+
+	sgtl5000_clk: sgtl5000-oscillator  {
+			compatible = "fixed-clock";
+			#clock-cells = <0>;
+			clock-frequency  = <12000000>;
+	};
+
+	sgtl5000-sound {
+		compatible = "simple-audio-card";
+		simple-audio-card,format = "i2s";
+		simple-audio-card,name = "Haikou,I2S-codec";
+		// 24.576 MHz oscillator on the baseboard, divided by 512 = 48 kHz
+		simple-audio-card,mclk-fs = <512>;
+		simple-audio-card,cpu {
+			sound-dai = <&i2s1>;
+			frame-master;
+			bitclock-master;
+		};
+		simple-audio-card,codec {
+			sound-dai = <&sgtl5000>;
+			clocks = <&sgtl5000_clk>;
+		};
+	};
+
+	vcc12v0_bdc: vcc5v0-sys {
+		compatible = "regulator-fixed";
+		regulator-name = "vcc12v0_bdc";
+		regulator-always-on;
+		regulator-boot-on;
+		regulator-min-microvolt = <12000000>;
+		regulator-max-microvolt = <12000000>;
+	};
+
+	bdc_pwr: bdc-pwr {
+		compatible = "regulator-fixed";
+		regulator-name = "bdc_pwr";
+		gpio = <&gpio4 21 GPIO_ACTIVE_HIGH>;	/* BDC Power - GPIO4_C5 */
+		enable-active-high;
+		startup-delay-us = <20000>;
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		regulator-boot-on;
+		vin-supply = <&vcc12v0_bdc>;
+	};
+
+	panel: panel {
+		compatible = "simple-panel";
+		power-supply = <&bdc_pwr>;
+		prepare-delay-ms = <20>;
+		enable-delay-ms = <100>;
+		display-timings {
+			native-mode = <&timing0>;
+
+			timing0: timing0 {
+				clock-frequency = <29500000>;
+				hactive = <800>;
+				vactive = <480>;
+				hfront-porch = <91>;
+				hsync-len = <12>;
+				hback-porch = <90>;
+				vfront-porch = <9>;
+				vsync-len = <2>;
+				vback-porch = <8>;
+				hsync-active = <1>;
+				vsync-active = <1>;
+				de-active = <1>;
+				pixelclk-active = <1>;
+			};
+		};
+
+		ports {
+			panel_in: endpoint {
+				remote-endpoint = <&edp_out>;
+			};
+		};
+	};
+};
+
+&i2c1 {
+	status = "disabled";
+};
+
+&i2c2 {
+	status = "disabled";
+};
+
+&i2c3 {
+	ds28cm00@50 {
+		status = "okay";
+		compatible = "ds28cm00";
+		reg = <0x50>;
+	};
+
+	lm75@48 {
+		status = "okay";
+		compatible = "lm75a";
+		reg = <0x48>;
+	};
+
+	eeprom@51 {
+		status = "okay";
+		compatible = "24c64";
+		reg = <0x51>;
+	};
+
+	// gpio_expander: gpio@38 {
+	// 	status = "okay";
+	// 	compatible = "nxp,pca9534";
+	// 	reg = <0x38>;
+	// 	gpio-controller;
+	// 	#gpio-cells = <2>;
+	// 	gpio-line-name = "lcd_run", 
+	// 			"touch_rst", 
+	// 			"deserializer_pd", 
+	// 			"logo_led", 
+	// 			"menu_led", "down_led", "up_led", "enter_led";
+	// };
+
+/* Removed this to gain serializer - deserializer access in applicaiton */
+	// lvds-link2-bridge@6e {
+	// 	status = "okay";
+	// 	compatible = "ti,ds92lv0421";
+	// 	reg = <0x6e>;
+	// 	pd-gpios = <&gpio_expander 0 GPIO_ACTIVE_HIGH>;
+	// };
+
+	// link2-lvds-bridge@76 {
+	// 	status = "okay";
+	// 	compatible = "ti,ds92lv0422";
+	// 	reg = <0x76>;
+	// 	pd-gpio = <&gpio_expander 2 GPIO_ACTIVE_HIGH>;
+	// };
+
+	touch: ilitek@41 {
+		status = "okay";
+		compatible = "tchip,ilitek";
+		reg = <0x41>;
+		// vdd-supply = <&deserializer_pwr>;
+		interrupt-parent = <&gpio1>;
+		interrupts = <20 IRQ_TYPE_LEVEL_LOW>;
+		ilitek,irq-gpio = <&gpio1 20 GPIO_ACTIVE_HIGH>;
+		// ilitek,reset-gpio = <&gpio_expander 1 GPIO_ACTIVE_HIGH>;
+		// ilitek,vbus = "vcc_i2c";
+		// ilitek,vdd = "vdd";
+		// ilitek,name = "ilitek_i2c";
+	};
+
+	sgtl5000: codec@0a {
+		status = "okay";
+		#sound-dai-cells = <0>;
+		compatible = "fsl,sgtl5000";
+		reg = <0x0a>;
+		VDDA-supply = <&vdda_codec>;
+		VDDIO-supply = <&vdda_codec>;
+		VDDD-supply = <&vddd_codec>;
+		clocks = <&sgtl5000_clk>;
+	};
+};
+
+&i2s0 {
+	status = "disabled";
+};
+
+&i2s1 {
+	status = "okay";
+	rockchip,i2s-broken-burst-len;
+	rockchip,playback-channels = <2>;
+	rockchip,capture-channels = <2>;
+	#sound-dai-cells = <0>;
+};
+
+&i2s2 {
+	status = "disabled";
+};
+
+&route_edp {
+	status = "okay";
+	logo,mode = "center";
+};
+&edp_in_vopl {
+	status = "okay";
+};
+
+&edp_in_vopb {
+	status = "disabled";
+};
+
+&vopl {
+	status = "okay";
+};
+&vopl_mmu {
+	status = "okay";
+};
+
+&edp {
+	status = "okay";
+	force-hpd;
+	/delete-property/ pinctrl-0;
+
+	ports {
+		port@1 {
+			reg = <1>;
+
+			edp_out: endpoint {
+				remote-endpoint = <&panel_in>;
+			};
+		};
+	};
+};
+
+/* HDMI */
+&i2c7 {
+	status = "okay";
+};
+&vopb {
+	status = "okay";
+};
+&vopb_mmu {
+	status = "okay";
+};
+&hdmi {
+	status = "okay";
+	/* remove the hdmi_i2c_xfer */
+	pinctrl-0 = <&hdmi_cec>;
+	#address-cells = <1>;
+	#size-cells = <0>;
+	#sound-dai-cells = <0>;
+	ddc-i2c-bus = <&i2c7>;
+	rockchip,defaultmode = <16>; /* CEA 1920x1080@60Hz */
+};
+&route_hdmi {
+	status = "okay";
+	logo,mode = "center";
+};
+&hdmi_in_vopl {
+	status = "disabled";	/* This should be disabled always */
+};
+&hdmi_in_vopb {
+	status = "okay";
+};
+/* HDMI */
+
+&gpu {
+	status = "okay";
+	mali-supply = <&vdd_gpu>;
+};
+
+&vpu {
+	status = "okay";
+	/* 0 means ion, 1 means drm */
+	//allocator = <0>;
+};
+
+&rkvdec {
+	status = "okay";
+	/* 0 means ion, 1 means drm */
+	//allocator = <0>;
+};
+
+
+&cdn_dp {
+	status = "disabled";
+};
+
+&spdif {
+	status = "disabled";
+};
+
+&pinctrl {
+
+	leds {
+		ext_leds_gpios: ext-leds-gpios {
+			rockchip,pins =
+				<2 3 RK_FUNC_GPIO &pcfg_output_high>,
+				<2 4 RK_FUNC_GPIO &pcfg_output_high>,
+				<2 5 RK_FUNC_GPIO &pcfg_output_high>,
+				<2 6 RK_FUNC_GPIO &pcfg_output_high>;
+		};
+	};
+	
+	mpu {
+
+		control_gpios: control-gpios {
+			rockchip,pins =
+				<1 0 RK_FUNC_GPIO &pcfg_pull_none>,	// LM75 interrupt
+				<1 1 RK_FUNC_GPIO &pcfg_pull_up>,	// Modem power
+				<1 2 RK_FUNC_GPIO &pcfg_pull_up>,	// ext USB power
+				<1 3 RK_FUNC_GPIO &pcfg_pull_up>,	// OLED Power
+				<1 18 RK_FUNC_GPIO &pcfg_pull_up>,	// Speaker or Mic
+				<1 22 RK_FUNC_GPIO &pcfg_pull_up>,	// SATA Bridge VBUS
+				<1 23 RK_FUNC_GPIO &pcfg_pull_up>,	// ext +12
+				<1 24 RK_FUNC_GPIO &pcfg_pull_up>,	// modem reset
+				<4 21 RK_FUNC_GPIO &pcfg_pull_up>,	// bdc +12
+				<1 10 RK_FUNC_GPIO &pcfg_pull_up>,	// OLED CS
+				<4 29 RK_FUNC_GPIO &pcfg_pull_up>,	// OLED rst
+				<4 30 RK_FUNC_GPIO &pcfg_pull_up>,	// OLED DC
+				<1 20 RK_FUNC_GPIO &pcfg_pull_none>;	// touch interrupt
+		};
+	};
+};
