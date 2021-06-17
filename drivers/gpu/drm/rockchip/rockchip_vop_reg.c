@@ -132,6 +132,8 @@ static const struct vop_win_phy rk3288_win01_data = {
 	.global_alpha_val = VOP_REG(RK3288_WIN0_SRC_ALPHA_CTRL, 0xff, 16),
 	.dst_alpha_ctl = VOP_REG(RK3288_WIN0_DST_ALPHA_CTRL, 0xffffffff, 0),
 	.channel = VOP_REG_VER(RK3288_WIN0_CTRL2, 0xff, 0, 3, 8, 8),
+	.key_color = VOP_REG(RK3288_WIN0_COLOR_KEY, 0x7ffffff, 0),
+	.key_en = VOP_REG(RK3288_WIN0_COLOR_KEY, 0x1, 31),
 };
 
 static const struct vop_win_phy rk3288_win23_data = {
@@ -148,6 +150,8 @@ static const struct vop_win_phy rk3288_win23_data = {
 	.src_alpha_ctl = VOP_REG(RK3288_WIN2_SRC_ALPHA_CTRL, 0xffff, 0),
 	.global_alpha_val = VOP_REG(RK3288_WIN2_SRC_ALPHA_CTRL, 0xff, 16),
 	.dst_alpha_ctl = VOP_REG(RK3288_WIN2_DST_ALPHA_CTRL, 0xffffffff, 0),
+	.key_color = VOP_REG(RK3288_WIN2_COLOR_KEY, 0x7ffffff, 0),
+	.key_en = VOP_REG(RK3288_WIN2_COLOR_KEY, 0x1, 31),
 };
 
 static const struct vop_win_phy rk3288_area1_data = {
@@ -405,6 +409,8 @@ static const struct vop_win_phy rk3368_win23_data = {
 	.src_alpha_ctl = VOP_REG(RK3368_WIN2_SRC_ALPHA_CTRL, 0xffff, 0),
 	.global_alpha_val = VOP_REG(RK3368_WIN2_SRC_ALPHA_CTRL, 0xff, 16),
 	.dst_alpha_ctl = VOP_REG(RK3368_WIN2_DST_ALPHA_CTRL, 0xffffffff, 0),
+	.key_color = VOP_REG(RK3366_WIN2_COLOR_KEY, 0x7ffffff, 0),
+	.key_en = VOP_REG(RK3366_WIN2_COLOR_KEY, 0x1, 31),
 };
 
 static const struct vop_win_phy rk3368_area1_data = {
@@ -1316,8 +1322,8 @@ static const struct vop_win_phy rk3366_lit_win0_data = {
 	.alpha_mode = VOP_REG(RK3366_LIT_WIN0_ALPHA_CTRL, 0x1, 1),
 	.alpha_en = VOP_REG(RK3366_LIT_WIN0_ALPHA_CTRL, 0x1, 0),
 	.global_alpha_val = VOP_REG(RK3366_LIT_WIN0_ALPHA_CTRL, 0xff, 4),
-	.key_color = VOP_REG(RK3366_LIT_WIN0_COLOR_KEY, 0xffffff, 0),
-	.key_en = VOP_REG(RK3366_LIT_WIN0_COLOR_KEY, 0x1, 24),
+	.key_color = VOP_REG(RK3366_LIT_WIN0_COLOR_KEY, 0x7ffffff, 0),
+	.key_en = VOP_REG(RK3366_LIT_WIN0_COLOR_KEY, 0x1, 31),
 };
 
 static const struct vop_win_phy rk3366_lit_win1_data = {
@@ -1336,8 +1342,8 @@ static const struct vop_win_phy rk3366_lit_win1_data = {
 	.alpha_mode = VOP_REG(RK3366_LIT_WIN1_ALPHA_CTRL, 0x1, 1),
 	.alpha_en = VOP_REG(RK3366_LIT_WIN1_ALPHA_CTRL, 0x1, 0),
 	.global_alpha_val = VOP_REG(RK3366_LIT_WIN1_ALPHA_CTRL, 0xff, 4),
-	.key_color = VOP_REG(RK3366_LIT_WIN1_COLOR_KEY, 0xffffff, 0),
-	.key_en = VOP_REG(RK3366_LIT_WIN1_COLOR_KEY, 0x1, 24),
+	.key_color = VOP_REG(RK3366_LIT_WIN1_COLOR_KEY, 0x7ffffff, 0),
+	.key_en = VOP_REG(RK3366_LIT_WIN1_COLOR_KEY, 0x1, 31),
 };
 
 static const struct vop_win_data rk3366_vop_lit_win_data[] = {

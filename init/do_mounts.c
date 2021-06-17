@@ -431,6 +431,15 @@ retry:
 	for (p = fs_names; *p; p += strlen(p)+1)
 		printk(" %s", p);
 	printk("\n");
+
+	/* Retry all filesystems when failed to mount with specified ones */
+	if (root_fs_names) {
+		printk("Retrying all filesystems\n");
+		root_fs_names = NULL;
+		get_fs_names(fs_names);
+		goto retry;
+	}
+	
 #ifdef CONFIG_BLOCK
 	__bdevname(ROOT_DEV, b);
 #endif
