@@ -30,11 +30,11 @@
 #include "drm_edid.h"
 #include "drmP.h"
 
-#define PTN3460_EDID_ADDR			0x0
-#define PTN3460_EDID_EMULATION_ADDR		0x84
+#define PTN3460_EDID_ADDR					0x0
+#define PTN3460_EDID_EMULATION_ADDR			0x84
 #define PTN3460_EDID_ENABLE_EMULATION		0
 #define PTN3460_EDID_EMULATION_SELECTION	1
-#define PTN3460_EDID_SRAM_LOAD_ADDR		0x85
+#define PTN3460_EDID_SRAM_LOAD_ADDR			0x85
 
 struct ptn3460_bridge {
 	struct drm_connector connector;
@@ -44,7 +44,7 @@ struct ptn3460_bridge {
 	struct drm_panel *panel;
 	struct gpio_desc *gpio_pd_n;
 	struct gpio_desc *gpio_rst_n;
-	u32 edid_emulation;
+	u32 edid_index;
 	bool enabled;
 };
 
@@ -104,16 +104,14 @@ static int ptn3460_select_edid(struct ptn3460_bridge *ptn_bridge)
 	char val;
 
 	/* Load the selected edid into SRAM (accessed at PTN3460_EDID_ADDR) */
-	ret = ptn3460_write_byte(ptn_bridge, PTN3460_EDID_SRAM_LOAD_ADDR,
-			ptn_bridge->edid_emulation);
+	ret = ptn3460_write_byte(ptn_bridge, PTN3460_EDID_SRAM_LOAD_ADDR, ptn_bridge->edid_index);
 	if (ret) {
 		DRM_ERROR("Failed to transfer EDID to sram, ret=%d\n", ret);
 		return ret;
 	}
 
 	/* Enable EDID emulation and select the desired EDID */
-	val = 1 << PTN3460_EDID_ENABLE_EMULATION |
-		ptn_bridge->edid_emulation << PTN3460_EDID_EMULATION_SELECTION;
+	val = 1 << PTN3460_EDID_ENABLE_EMULATION | ptn_bridge->edid_index << PTN3460_EDID_EMULATION_SELECTION;
 
 	ret = ptn3460_write_byte(ptn_bridge, PTN3460_EDID_EMULATION_ADDR, val);
 	if (ret) {
@@ -124,6 +122,15 @@ static int ptn3460_select_edid(struct ptn3460_bridge *ptn_bridge)
 	return 0;
 }
 
+static void ptn3460_reset(struct ptn3460_bridge *ptn_bridge) 
+{
+	if(ptn_bridge->gpio_rst_n) {
+		gpiod_set_value(ptn_bridge->gpio_rst_n, 0);
+		usleep_range(10, 20);
+		gpiod_set_value(ptn_bridge->gpio_rst_n, 1);
+	}
+}
+
 static void ptn3460_pre_enable(struct drm_bridge *bridge)
 {
 	struct ptn3460_bridge *ptn_bridge = bridge_to_ptn3460(bridge);
@@ -132,11 +139,11 @@ static void ptn3460_pre_enable(struct drm_bridge *bridge)
 	if (ptn_bridge->enabled)
 		return;
 
-	gpiod_set_value(ptn_bridge->gpio_pd_n, 1);
+	if(ptn_bridge->gpio_pd_n) {
+		gpiod_set_value(ptn_bridge->gpio_pd_n, 1);
+	}
 
-	gpiod_set_value(ptn_bridge->gpio_rst_n, 0);
-	usleep_range(10, 20);
-	gpiod_set_value(ptn_bridge->gpio_rst_n, 1);
+	ptn3460_reset(ptn_bridge);
 
 	if (drm_panel_prepare(ptn_bridge->panel)) {
 		DRM_ERROR("failed to prepare panel\n");
@@ -150,10 +157,12 @@ static void ptn3460_pre_enable(struct drm_bridge *bridge)
 	 */
 	msleep(90);
 
-	ret = ptn3460_select_edid(ptn_bridge);
-	if (ret)
-		DRM_ERROR("Select EDID failed ret=%d\n", ret);
-
+	if(ptn_bridge->edid_index > 6) {
+		ret = ptn3460_select_edid(ptn_bridge);
+		if (ret) {
+			DRM_ERROR("Select EDID failed ret=%d\n", ret);
+		}
+	}
 	ptn_bridge->enabled = true;
 }
 
@@ -181,8 +190,13 @@ static void ptn3460_disable(struct drm_bridge *bridge)
 		return;
 	}
 
-	gpiod_set_value(ptn_bridge->gpio_rst_n, 1);
-	gpiod_set_value(ptn_bridge->gpio_pd_n, 0);
+	if(ptn_bridge->gpio_rst_n) {
+		gpiod_set_value(ptn_bridge->gpio_rst_n, 1);
+	}
+
+	if(ptn_bridge->gpio_pd_n) {
+		gpiod_set_value(ptn_bridge->gpio_pd_n, 0);
+	}
 }
 
 static void ptn3460_post_disable(struct drm_bridge *bridge)
@@ -195,11 +209,31 @@ static void ptn3460_post_disable(struct drm_bridge *bridge)
 	}
 }
 
+static u8 BDC_EDID[EDID_LENGTH] = {
+	0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00,
+	0x31, 0xd8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x05, 0x16, 0x01, 0x03, 0x6d, 0x1b, 0x10, 0x78,
+	0xea, 0x5e, 0xc0, 0xa4, 0x59, 0x4a, 0x98, 0x25,
+	0x20, 0x50, 0x54, 0x01, 0x00, 0x00, 0x45, 0xc0,
+	0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
+	0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0xa0, 0x0f,
+	0x20, 0x00, 0x31, 0xe0, 0x1c, 0x10, 0x28, 0x80,
+	0x14, 0x00, 0x15, 0xa6, 0x10, 0x00, 0x00, 0x1e,
+	0x00, 0x00, 0x00, 0xff, 0x00, 0x4c, 0x69, 0x6e,
+	0x75, 0x78, 0x20, 0x23, 0x30, 0x0a, 0x20, 0x20,
+	0x20, 0x20, 0x00, 0x00, 0x00, 0xfd, 0x00, 0x3b,
+	0x3d, 0x24, 0x26, 0x05, 0x00, 0x0a, 0x20, 0x20,
+	0x20, 0x20, 0x20, 0x20, 0x00, 0x00, 0x00, 0xfc,
+	0x00, 0x4c, 0x69, 0x6e, 0x75, 0x78, 0x20, 0x57,
+	0x56, 0x47, 0x41, 0x0a, 0x20, 0x20, 0x00, 0xf4,
+};
+
 static int ptn3460_get_modes(struct drm_connector *connector)
 {
 	struct ptn3460_bridge *ptn_bridge;
 	u8 *edid;
-	int ret, num_modes = 0;
+	int ret; 
+	int num_modes = 0;
 	bool power_off;
 
 	ptn_bridge = connector_to_ptn3460(connector);
@@ -210,17 +244,22 @@ static int ptn3460_get_modes(struct drm_connector *connector)
 	power_off = !ptn_bridge->enabled;
 	ptn3460_pre_enable(&ptn_bridge->bridge);
 
-	edid = kmalloc(EDID_LENGTH, GFP_KERNEL);
-	if (!edid) {
-		DRM_ERROR("Failed to allocate EDID\n");
-		return 0;
-	}
+	if(ptn_bridge->edid_index <= 6) {
 
-	ret = ptn3460_read_bytes(ptn_bridge, PTN3460_EDID_ADDR, edid,
-			EDID_LENGTH);
-	if (ret) {
-		kfree(edid);
-		goto out;
+		edid = kmalloc(EDID_LENGTH, GFP_KERNEL);
+		if (!edid) {
+			DRM_ERROR("Failed to allocate EDID\n");
+			return 0;
+		}
+
+		ret = ptn3460_read_bytes(ptn_bridge, PTN3460_EDID_ADDR, edid, EDID_LENGTH);
+		if (ret) {
+			kfree(edid);
+			goto out;
+		}
+	}
+	else if(ptn_bridge->edid_index == 7) {
+		edid = BDC_EDID;
 	}
 
 	ptn_bridge->edid = (struct edid *)edid;
@@ -237,8 +276,10 @@ out:
 
 static struct drm_encoder *ptn3460_best_encoder(struct drm_connector *connector)
 {
-	struct ptn3460_bridge *ptn_bridge = connector_to_ptn3460(connector);
+	struct ptn3460_bridge *ptn_bridge;
 
+	ptn_bridge = container_of(connector, struct ptn3460_bridge, connector);
+	
 	return ptn_bridge->bridge.encoder;
 }
 
@@ -272,27 +313,30 @@ static int ptn3460_bridge_attach(struct drm_bridge *bridge)
 {
 	struct ptn3460_bridge *ptn_bridge = bridge_to_ptn3460(bridge);
 	int ret;
-
+	
 	if (!bridge->encoder) {
 		DRM_ERROR("Parent encoder object not found");
 		return -ENODEV;
 	}
 
 	ptn_bridge->connector.polled = DRM_CONNECTOR_POLL_HPD;
-	ret = drm_connector_init(bridge->dev, &ptn_bridge->connector,
-			&ptn3460_connector_funcs, DRM_MODE_CONNECTOR_LVDS);
+	ret = drm_connector_init(bridge->dev, 
+							&ptn_bridge->connector,
+							&ptn3460_connector_funcs, 
+							DRM_MODE_CONNECTOR_LVDS);
 	if (ret) {
 		DRM_ERROR("Failed to initialize connector with drm\n");
 		return ret;
 	}
 	drm_connector_helper_add(&ptn_bridge->connector,
-					&ptn3460_connector_helper_funcs);
+							&ptn3460_connector_helper_funcs);
 	drm_connector_register(&ptn_bridge->connector);
 	drm_mode_connector_attach_encoder(&ptn_bridge->connector,
-							bridge->encoder);
+									bridge->encoder);
 
 	if (ptn_bridge->panel)
-		drm_panel_attach(ptn_bridge->panel, &ptn_bridge->connector);
+		drm_panel_attach(ptn_bridge->panel, 
+						&ptn_bridge->connector);
 
 	drm_helper_hpd_irq_event(ptn_bridge->connector.dev);
 
@@ -307,8 +351,7 @@ static struct drm_bridge_funcs ptn3460_bridge_funcs = {
 	.attach = ptn3460_bridge_attach,
 };
 
-static int ptn3460_probe(struct i2c_client *client,
-				const struct i2c_device_id *id)
+static int ptn3460_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
 	struct device *dev = &client->dev;
 	struct ptn3460_bridge *ptn_bridge;
@@ -331,10 +374,12 @@ static int ptn3460_probe(struct i2c_client *client,
 		}
 	}
 
+	// ptn_bridge->bridge.dev = dev;
+	ptn_bridge->bridge.driver_private = ptn_bridge;
+	
 	ptn_bridge->client = client;
 
-	ptn_bridge->gpio_pd_n = devm_gpiod_get(&client->dev, "powerdown",
-					       GPIOD_OUT_HIGH);
+	ptn_bridge->gpio_pd_n = devm_gpiod_get_optional(&client->dev, "powerdown", GPIOD_OUT_HIGH);
 	if (IS_ERR(ptn_bridge->gpio_pd_n)) {
 		ret = PTR_ERR(ptn_bridge->gpio_pd_n);
 		dev_err(dev, "cannot get gpio_pd_n %d\n", ret);
@@ -345,18 +390,16 @@ static int ptn3460_probe(struct i2c_client *client,
 	 * Request the reset pin low to avoid the bridge being
 	 * initialized prematurely
 	 */
-	ptn_bridge->gpio_rst_n = devm_gpiod_get(&client->dev, "reset",
-						GPIOD_OUT_LOW);
+	ptn_bridge->gpio_rst_n = devm_gpiod_get_optional(&client->dev, "reset", GPIOD_OUT_LOW);
 	if (IS_ERR(ptn_bridge->gpio_rst_n)) {
 		ret = PTR_ERR(ptn_bridge->gpio_rst_n);
-		DRM_ERROR("cannot get gpio_rst_n %d\n", ret);
+		dev_err(dev, "cannot get gpio_rst_n %d\n", ret);
 		return ret;
 	}
 
-	ret = of_property_read_u32(dev->of_node, "edid-emulation",
-			&ptn_bridge->edid_emulation);
+	ret = of_property_read_u32(dev->of_node, "edid-emulation", &ptn_bridge->edid_index);
 	if (ret) {
-		dev_err(dev, "Can't read EDID emulation value\n");
+		dev_err(dev, "Can't read EDID emulation index\n");
 		return ret;
 	}
 
@@ -364,7 +407,7 @@ static int ptn3460_probe(struct i2c_client *client,
 	ptn_bridge->bridge.of_node = dev->of_node;
 	ret = drm_bridge_add(&ptn_bridge->bridge);
 	if (ret) {
-		DRM_ERROR("Failed to add bridge\n");
+		dev_err(dev, "Failed to add bridge\n");
 		return ret;
 	}
 

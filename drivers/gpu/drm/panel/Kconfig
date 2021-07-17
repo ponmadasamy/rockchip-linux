@@ -51,4 +51,14 @@ config DRM_PANEL_SHARP_LQ101R1SX01
 	  To compile this driver as a module, choose M here: the module
 	  will be called panel-sharp-lq101r1sx01.
 
+config DRM_PANEL_DURAGON
+	tristate "Duragon Panels"
+	depends on OF
+	depends on I2C
+	depends on BACKLIGHT_CLASS_DEVICE
+	select VIDEOMODE_HELPERS
+	help
+	  This will enable DRM panel driver support for duragon BDC (Bus Driver
+	  Console) which is stays behind FPD-Link II and III. and DRMC, HMI
+
 endmenu

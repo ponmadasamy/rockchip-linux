@@ -53,7 +53,7 @@
 			clock-frequency  = <12000000>;
 	};
 
-	sgtl5000_sound: sgtl5000-sound {
+	sgtl5000-sound {
 		compatible = "simple-audio-card";
 		simple-audio-card,format = "i2s";
 		simple-audio-card,name = "Haikou,I2S-codec";
@@ -94,57 +94,45 @@
 
 	panel: panel {
 		status = "okay";
+		// compatible = "simple-panel";
 		compatible = "duragon, xenarc-wvga";
+		// compatible = "duragon, bdc-fixed";
 		power-supply = <&vcc_bdc>;
-		control-i2c-bus = <&i2c3>;
-		enable-gpio = <&panel_io 0 GPIO_ACTIVE_LOW>;
-		reset-gpio = <&panel_io 1 GPIO_ACTIVE_LOW>;
-		edp_to_lvds: ptn3460 {
-			address = <0x60>;
-		};
-		fpd_link_ser: ds90ub927q {
-			address = <0x1b>;
-		};		
-		fpd_link_deser: ds90ub928q {
-			address = <0x3b>;
-		};		
-		display_io: pca9534a {
-			address = <0x38>;
-		};
+		// prepare-delay-ms = <20>;
+		// enable-delay-ms = <100>;
+		// disable-delay-ms = <100>;
+		// unprepare-delay-ms = <10>;
+		// reset-delay-ms = <10>;
+		// init-delay-ms = <10>;
+		// width-mm = <152>;
+		// height-mm = <91>;
+		// bus-format = <4106>; /* MEDIA_BUS_FMT_RGB888_1X24 - 0x100a - 4106 */
+		// bpc = <8>;
+		// display-timings {
+		// 	native-mode = <&timing0>;
+
+		// 	timing0: timing0 {
+		// 		clock-frequency = <29500000>;
+		// 		hactive = <800>;
+		// 		vactive = <480>;
+		// 		hfront-porch = <91>;
+		// 		hsync-len = <12>;
+		// 		hback-porch = <90>;
+		// 		vfront-porch = <9>;
+		// 		vsync-len = <2>;
+		// 		vback-porch = <8>;
+		// 		hsync-active = <1>;
+		// 		vsync-active = <1>;
+		// 		de-active = <1>;
+		// 		pixelclk-active = <1>;
+		// 	};
+		// };
 
 		ports {
 			panel_in: endpoint {
 				remote-endpoint = <&edp_out>;
+				// remote-endpoint = <&bridge_out>;
 			};
-		};
-	};
-
-	panel_keys: panel-keys {
-		compatible = "gpio-keys";
-		left {
-			label = "Left";
-			linux,code = <KEY_LEFT>;
-			gpios = <&panel_io 7 GPIO_ACTIVE_LOW>;
-		};
-		right {
-			label = "Right";
-			linux,code = <KEY_RIGHT>;
-			gpios = <&panel_io 6 GPIO_ACTIVE_LOW>;
-		};
-		menu {
-			label = "Menu";
-			linux,code = <KEY_MENU>;
-			gpios = <&panel_io 5 GPIO_ACTIVE_LOW>;
-		};
-		help {
-			label = "help";
-			linux,code = <KEY_HELP>;
-			gpios = <&panel_io 4 GPIO_ACTIVE_LOW>;
-		};
-		power {
-			label = "Power";
-			linux,code = <KEY_POWER>;
-			gpios = <&panel_io 3 GPIO_ACTIVE_LOW>;
 		};
 	};
 };
@@ -173,23 +161,7 @@
 &i2c3 {
 	status = "okay";
 
-	panel_io: panel-io@38 {
-		status = "okay";
-		compatible = "nxp,pca9534";
-		reg = <0x38>;
-		gpio-controller;
-		#gpio-cells = <2>;
-		pinctrl-names = "default";
-		pinctrl-0 = <&touch_interrupt_gpio>;
-		interrupt-parent = <&gpio1>;
-		interrupts = <20 IRQ_TYPE_LEVEL_LOW>;
-		gpio-line-name = "lcd_enable", 
-						 "touch_reset", 
-						 "logo_led", 
-						 "button1", "button2", "button3", "button4", "button5";
-	};
-
-	eDP_LVDS_bridge: ptn3460@60 {
+	ptn3460: eDP-LVDS@60 {
 		status = "disabled";
 		compatible = "nxp,ptn3460";
 		reg = <0x60>;
@@ -232,7 +204,7 @@
 	};
 
 	tsc2007@4a {
-		status = "disabled";
+		status = "okay";
 		compatible = "ti,tsc2007";
 		reg = <0x4a>;
 		interrupt-parent = <&gpio1>;
@@ -342,6 +314,13 @@
 };
 &hdmi {
 	status = "disabled";
+	/* remove the hdmi_i2c_xfer */
+	pinctrl-0 = <&hdmi_cec>;
+	#address-cells = <1>;
+	#size-cells = <0>;
+	#sound-dai-cells = <0>;
+	ddc-i2c-bus = <&i2c7>;
+	rockchip,defaultmode = <16>; /* CEA 1920x1080@60Hz */
 };
 /* HDMI */
 
@@ -401,6 +380,7 @@
 				<1 3 RK_FUNC_GPIO &pcfg_input>,			/* AK8975 Interrupt		<GPIO1_A3 - 40> */
 				<1 13 RK_FUNC_GPIO &pcfg_input>,		/* ANT_DET0				<GPIO1_B5 - 82> */
 				<1 18 RK_FUNC_GPIO &pcfg_output_low>,	/* Speaker or Mic		<GPIO1_C2 - 43> */
+				<1 20 RK_FUNC_GPIO &pcfg_input>,		/* touch interrupt		<GPIO1_C4 - 84> */
 				<1 22 RK_FUNC_GPIO &pcfg_output_high>,	/* SATA Bridge VBUS		<GPIO1_C6 - 44> */
 				<1 23 RK_FUNC_GPIO &pcfg_output_high>,	/* ext +12v				<GPIO1_C7 - 46> */
 				<1 24 RK_FUNC_GPIO &pcfg_output_high>,	/* modem reset			<GPIO1_D0 - 48> */
@@ -409,9 +389,6 @@
 				<4 18 RK_FUNC_GPIO &pcfg_output_high>,	/* Modem Power			<GPIO4_C2 - 88> */
 				<4 21 RK_FUNC_GPIO &pcfg_output_high>,	/* bdc +12				<GPIO4_C5 - 50> */
 				<4 22 RK_FUNC_GPIO &pcfg_input>;		/* ANT_DET1				<GPIO4_C6 - 90> */
-		};
-		touch_interrupt_gpio: touch-interrupt-gpio {
-			rockchip,pins = <1 20 RK_FUNC_GPIO &pcfg_pull_none>;		/* touch interrupt		<GPIO1_C4 - 84> */
 		};
 	};
 };
