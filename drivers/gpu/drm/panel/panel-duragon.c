@@ -954,6 +954,10 @@ static int duragon_panel_probe(struct device *dev, const struct duragon_panel_de
 				probe_defer = -EPROBE_DEFER;
 				goto free_panel;
 			}
+			else {
+				/* We tried */
+				err = 0;
+			}
 		}
 		dev_err(dev, "failed to request enable-gpio, %d\n", err);		
 	}
@@ -969,6 +973,10 @@ static int duragon_panel_probe(struct device *dev, const struct duragon_panel_de
 				dev_err(dev, "reset-gpio defered\n");
 				probe_defer = -EPROBE_DEFER;
 				goto free_panel;
+			}
+			else {
+				/* We tried */
+				err = 0;
 			}
 		}
 		dev_err(dev, "failed to request reset-gpio, %d\n", err);
